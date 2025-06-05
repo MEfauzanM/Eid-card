@@ -8,10 +8,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
 </head>
 <body>
+  <div id="templateSelector">
+    <p>Select a template:</p>
+    <div class="template-option">
+      <img src="template1.jpeg" data-template="template1.jpeg" class="template selected" />
+      <img src="template2.jpg" data-template="template2.jpg" class="template" />
+      <img src="template3.jpeg" data-template="template3.jpeg" class="template" />
+      <img src="template4.jpeg" data-template="template4.jpeg" class="template" />
+    </div>
+  </div>
+
   <h1>Eid Card Generator</h1>
   <input type="file" id="imageInput" accept="image/*"/>
-  <button id="downloadBtn" onclick="generateCard()">Download Greeting Card</button>
+  <button id="downloadBtn">Download Greeting Card</button>
   <canvas id="canvas" width="675" height="1200"></canvas>
+
 
   <footer>
     &copy; 2025 Eid Greetings

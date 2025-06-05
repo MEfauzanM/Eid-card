@@ -1,35 +1,34 @@
-const downloadBtn = document.getElementById('downloadBtn');
-const input = document.getElementById('imageInput');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const input = document.getElementById('imageInput');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
 
-downloadBtn.addEventListener('click', () => {
-  const file = input.files[0];
-  if (!file) {
-    alert("Please upload your image.");
-    return;
-  }
+    let selectedTemplate = 'template1.jpeg';
+    let imageX = 240, imageY = 560;
+    const imageDiameter = 200;
+    const radius = imageDiameter / 2;
 
-  const background = new Image();
-  background.src = 'template2.jpg'; // Ensure this file exists in your folder
+    let isDragging = false, offsetX, offsetY;
+    let userImage, background;
 
-  const userImage = new Image();
-  userImage.src = URL.createObjectURL(file);
+    document.querySelectorAll('.template').forEach(img => {
+      img.addEventListener('click', () => {
+        document.querySelectorAll('.template').forEach(t => t.classList.remove('selected'));
+        img.classList.add('selected');
+        selectedTemplate = img.getAttribute('data-template');
+        if (userImage) drawCanvas();
+      });
+    });
 
-  background.onload = () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+    function drawCanvas() {
+      canvas.style.display = 'block';
+      if (!background || !userImage) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-    userImage.onload = () => {
-      const x = 240;
-      const y = 480;
-      const diameter = 200;
-      const radius = diameter / 2;
-
-      // Circle frame border
       ctx.save();
       ctx.beginPath();
-      ctx.arc(x + radius, y + radius, radius + 8, 0, Math.PI * 2); // Border
+      ctx.arc(imageX + radius, imageY + radius, radius + 8, 0, Math.PI * 2);
       ctx.fillStyle = 'white';
       ctx.fill();
       ctx.lineWidth = 8;
@@ -38,47 +37,73 @@ downloadBtn.addEventListener('click', () => {
       ctx.closePath();
       ctx.restore();
 
-      // Crop user image to square from center
       const aspectRatio = userImage.width / userImage.height;
-      let cropWidth, cropHeight;
-
-      if (aspectRatio > 1) {
-        cropHeight = userImage.height;
-        cropWidth = cropHeight;
-      } else {
-        cropWidth = userImage.width;
-        cropHeight = cropWidth;
-      }
+      let cropWidth = userImage.width, cropHeight = userImage.height;
+      if (aspectRatio > 1) cropWidth = cropHeight;
+      else cropHeight = cropWidth;
 
       const cropX = (userImage.width - cropWidth) / 2;
       const cropY = (userImage.height - cropHeight) / 2;
 
-      // Draw cropped image clipped in circle
       ctx.save();
       ctx.beginPath();
-      ctx.arc(x + radius, y + radius, radius, 0, Math.PI * 2);
-      ctx.closePath();
+      ctx.arc(imageX + radius, imageY + radius, radius, 0, Math.PI * 2);
       ctx.clip();
-
-      ctx.drawImage(
-        userImage,
-        cropX, cropY, cropWidth, cropHeight, // cropped source
-        x, y, diameter, diameter // destination
-      );
-
+      ctx.drawImage(userImage, cropX, cropY, cropWidth, cropHeight, imageX, imageY, imageDiameter, imageDiameter);
       ctx.restore();
+    }
 
-      setTimeout(() => {
-        const link = document.createElement('a');
-        link.download = 'eid-greeting-card.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        URL.revokeObjectURL(userImage.src);
-      }, 100);
-    };
-  };
+    downloadBtn.addEventListener('click', () => {
+      const file = input.files[0];
+      if (!file) {
+        alert("Please upload your image.");
+        return;
+      }
 
-  background.onerror = () => {
-    alert("Background template image not found. Please ensure 'template.jpg' is in the correct folder.");
-  };
-});
+      background = new Image();
+      background.src = selectedTemplate;
+
+      userImage = new Image();
+      userImage.src = URL.createObjectURL(file);
+
+      background.onload = () => {
+        userImage.onload = () => {
+          drawCanvas();
+        };
+      };
+
+      background.onerror = () => {
+        alert("Background template image not found.");
+      };
+    });
+
+    canvas.addEventListener('mousedown', e => {
+      const mouseX = e.offsetX;
+      const mouseY = e.offsetY;
+      const dx = mouseX - (imageX + radius);
+      const dy = mouseY - (imageY + radius);
+
+      if (dx * dx + dy * dy <= radius * radius) {
+        isDragging = true;
+        offsetX = dx;
+        offsetY = dy;
+      }
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      imageX = e.offsetX - offsetX - radius;
+      imageY = e.offsetY - offsetY - radius;
+      drawCanvas();
+    });
+
+    canvas.addEventListener('mouseup', () => isDragging = false);
+    canvas.addEventListener('mouseleave', () => isDragging = false);
+
+    downloadBtn.addEventListener('dblclick', () => {
+      if (!userImage || !background) return;
+      const link = document.createElement('a');
+      link.download = 'eid-greeting-card.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
